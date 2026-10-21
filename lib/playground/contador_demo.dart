@@ -35,10 +35,9 @@ class _ContadorDemoState extends State<ContadorDemo> {
     // Por qué: sin setState(), _veces sí cambia en memoria (fijate en la
     // terminal) pero Flutter nunca se entera de que debe reconstruir la
     // pantalla — el número en pantalla se queda congelado en 0.
-    print('Tocaste +, pero setState() todavía no está activo: el número no cambia en pantalla.');
-    // setState(() {
-    //   _veces++;
-    // });
+    setState(() {
+      _veces++;
+    });
   }
 
   @override
@@ -51,7 +50,9 @@ class _ContadorDemoState extends State<ContadorDemo> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('_veces', style: TextStyle(color: Colors.grey)),
-            Text('$_veces', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+            Text('$_veces',
+                style:
+                    const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
