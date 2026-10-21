@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../controllers/places_controller.dart';
 import '../models/place.dart';
 
-/// Formulario "Agregar lugar": valida y agrega un [Place] a la lista
-/// en memoria — Sesión 2. Persistencia real llega en la Sesión 7.
+/// Formulario "Agregar lugar": valida y agrega un [Place] — Sesión 2.
+/// Desde la Sesión 4, el nuevo lugar se agrega vía `PlacesController`
+/// (`Get.find`) en vez de mutar `lugaresEjemplo` directamente y recargar a
+/// mano al volver: Inicio (y, más adelante, el Mapa) lo muestran de
+/// inmediato. Persistencia real (que sobreviva reiniciar la app) llega en
+/// la Sesión 7.
 class AddPlaceScreen extends StatefulWidget {
   const AddPlaceScreen({super.key});
 
@@ -36,14 +43,21 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
             children: [
               TextFormField(
                 controller: _nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre del lugar', hintText: 'Ej. Parque El Ejido'),
-                validator: (valor) => (valor == null || valor.trim().isEmpty) ? 'El nombre es obligatorio' : null,
+                decoration: const InputDecoration(
+                    labelText: 'Nombre del lugar',
+                    hintText: 'Ej. Parque El Ejido'),
+                validator: (valor) => (valor == null || valor.trim().isEmpty)
+                    ? 'El nombre es obligatorio'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _categoriaController,
-                decoration: const InputDecoration(labelText: 'Categoría', hintText: 'Ej. Cafeterías'),
-                validator: (valor) => (valor == null || valor.trim().isEmpty) ? 'La categoría es obligatoria' : null,
+                decoration: const InputDecoration(
+                    labelText: 'Categoría', hintText: 'Ej. Cafeterías'),
+                validator: (valor) => (valor == null || valor.trim().isEmpty)
+                    ? 'La categoría es obligatoria'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -51,13 +65,15 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
                 decoration: const InputDecoration(labelText: 'Descripción'),
                 maxLines: 3,
                 validator: (valor) =>
-                    (valor == null || valor.trim().length < 10) ? 'Escribe al menos 10 caracteres' : null,
+                    (valor == null || valor.trim().length < 10)
+                        ? 'Escribe al menos 10 caracteres'
+                        : null,
               ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    lugaresEjemplo.add(Place(
+                    Get.find<PlacesController>().agregarLugar(Place(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
                       nombre: _nombreController.text.trim(),
                       categoria: _categoriaController.text.trim(),
@@ -65,7 +81,8 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
                       lat: -0.1807,
                       lng: -78.4859,
                     ));
-                    Navigator.pop(context);
+                    Get.back();
+                    Get.snackbar('Lugar agregado', 'Ya aparece en Inicio');
                   }
                 },
                 child: const Text('Guardar'),

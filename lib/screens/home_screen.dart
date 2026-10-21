@@ -1,106 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../controllers/places_controller.dart';
 import '../models/place.dart';
-import '../widgets/place_card.dart';
-import '../widgets/loading_view.dart';
+import '../theme/app_theme.dart';
 import '../widgets/empty_view.dart';
 import '../widgets/error_view.dart';
-import '../theme/app_theme.dart';
+import '../widgets/loading_view.dart';
+import '../widgets/place_card.dart';
 import 'add_place_screen.dart';
 
-/// Pantalla de Inicio: lista de lugares — Sesión 2 (datos de ejemplo).
-/// Desde la Sesión 3, la carga pasa por una función simulada con estados
-/// loading/vacío/error y un layout responsivo. Desde la Sesión 6, esta
-/// misma pantalla consume la Overpass API real, sin cambiar su estructura.
-class HomeScreen extends StatefulWidget {
+/// Pantalla de Inicio: lista de lugares — Sesión 2. Desde la Sesión 4 ya
+/// no mantiene su propio `Future`/`setState`: `GetView<PlacesController>`
+/// da acceso directo al controller ya registrado por `PlacesBinding`
+/// (equivalente a `Get.find<PlacesController>()`, pero sin repetirlo en
+/// cada método), y `Obx` reconstruye la pantalla sola cuando el controller
+/// cambia. Las próximas pantallas (Mapa en la Sesión 5, Favoritos en la
+/// Sesión 7) leen del mismo controller.
+class HomeScreen extends GetView<PlacesController> {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<Place>> _futuroLugares;
-  bool _modoDebugError = false;
-  bool _modoDebugVacio = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _cargar();
-  }
-
-  /// Dispara (o vuelve a disparar) la carga. [_modoDebugError]/[_modoDebugVacio]
-  /// son solo un recurso de esta práctica, para demostrar los 3 estados sin
-  /// depender de una red real — no existen en la versión final de la app.
-  void _cargar() {
-    setState(() {
-      _futuroLugares = fetchLugaresSimulado(
-          forzarError: _modoDebugError, forzarVacio: _modoDebugVacio);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ExploraEC'),
+        title: Obx(() => Text('ExploraEC (${controller.total})')),
         actions: [
+          // TODO(sesion-04): OPCIONAL — descomenta el bloque de abajo (Paso 6B — idioma). No borres nada.
+          // Por qué: `Get.updateLocale` cambia el idioma activo y reconstruye
+          // la app entera sin `setState` ni `context`: es estado global, igual
+          // que `PlacesController`, pero manejado por el propio GetX.
+          IconButton(
+            icon: const Icon(Icons.translate),
+            tooltip: 'idioma'.tr,
+            onPressed: () {
+              final esEspanol = Get.locale?.languageCode == 'es';
+              Get.updateLocale(esEspanol
+                  ? const Locale('en', 'US')
+                  : const Locale('es', 'EC'));
+            },
+          ),
           PopupMenuButton<String>(
             tooltip: 'Simular estado (solo práctica)',
-            onSelected: (valor) {
-              _modoDebugError = valor == 'error';
-              _modoDebugVacio = valor == 'vacio';
-              _cargar();
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'normal', child: Text('Simular: normal')),
-              PopupMenuItem(value: 'vacio', child: Text('Simular: vacío')),
-              PopupMenuItem(value: 'error', child: Text('Simular: error')),
+            onSelected: controller.simular,
+            // TODO(sesion-04): OPCIONAL — borra el bloque `itemBuilder` de abajo y descomenta el bloque completo. (Paso 6B — idioma)
+            // Por qué: igual que en la barra inferior, el texto pasa a
+            // `.tr` y la lista deja de ser `const`.
+
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'normal', child: Text('sim_normal'.tr)),
+              PopupMenuItem(value: 'vacio', child: Text('sim_vacio'.tr)),
+              PopupMenuItem(value: 'error', child: Text('sim_error'.tr)),
             ],
           ),
         ],
       ),
-      // TODO(sesion-03): borra la línea de abajo y descomenta el bloque completo. (Paso 3 — estados loading/vacío/error)
-      // Por qué: el Center fijo de abajo no distingue entre "cargando",
-      // "vacío" y "falló" — el FutureBuilder real inspecciona el estado
-      // del snapshot y dibuja LoadingView/ErrorView/EmptyView según
-      // corresponda, para que la pantalla nunca quede en blanco.
+      // TODO(sesion-04): borra la línea de abajo y descomenta el bloque completo. (Paso 3 — reactividad con Obx)
+      // Por qué: el texto fijo de abajo nunca cambia porque nada lo
+      // observa — Obx reconstruye automáticamente su contenido cada vez
+      // que una variable Rx que lee (controller.estado, controller.lugares)
+      // cambia, sin necesitar setState ni StatefulWidget en esta pantalla.
 
-      body: FutureBuilder<List<Place>>(
-        future: _futuroLugares,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LoadingView(mensaje: 'Buscando lugares cercanos...');
-          }
-          if (snapshot.hasError) {
-            return ErrorView(
-                mensaje: '${snapshot.error}', onReintentar: _cargar);
-          }
-          final lugares = snapshot.data ?? [];
-          if (lugares.isEmpty) {
-            return const EmptyView(mensaje: 'Todavía no hay lugares guardados');
-          }
-          return _buildLista(lugares);
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddPlaceScreen()),
+      body: Obx(() {
+        if (controller.estado.value == EstadoCarga.cargando) {
+          return const LoadingView(mensaje: 'Buscando lugares cercanos...');
+        }
+        if (controller.estado.value == EstadoCarga.error) {
+          return ErrorView(
+            mensaje: controller.mensajeError.value,
+            onReintentar: controller.cargarLugares,
           );
-          _cargar();
-        },
+        }
+        if (controller.lugares.isEmpty) {
+          return const EmptyView(mensaje: 'Todavía no hay lugares guardados');
+        }
+        return _buildLista(controller.lugares);
+      }),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Get.to(() => const AddPlaceScreen()),
         child: const Icon(Icons.add),
       ),
     );
   }
-
-  // TODO(sesion-03): borra la línea de abajo y descomenta el bloque completo. (Paso 4 — layout responsivo)
-  // Por qué: el ListView.builder de abajo es siempre una sola columna,
-  // sin importar el ancho de pantalla — la versión real usa
-  // LayoutBuilder para leer el ancho disponible y elegir ListView
-  // (teléfono angosto) o GridView de 2-3 columnas (pantalla ancha).
 
   Widget _buildLista(List<Place> lugares) {
     return LayoutBuilder(
