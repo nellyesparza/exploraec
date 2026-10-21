@@ -1,36 +1,50 @@
-# Placeholders de esta rama (sesion-04)
+# Placeholders de esta rama (sesion-05)
 
-Punto de partida: ExploraEC con tema, estados loading/vacío/error y layout responsivo ya resueltos (Sesión 3), y todo el estado de Inicio todavía dentro de `HomeScreen`. Tráela con:
+Punto de partida: ExploraEC con `PlacesController` (GetX) ya resuelto en Inicio (Sesión 4) y la pestaña Mapa todavía como placeholder. Tráela con:
 
 ```bash
 git fetch starter
-git checkout starter/sesion-04 -- lib pubspec.yaml PLACEHOLDERS.md
+git checkout starter/sesion-05 -- lib pubspec.yaml PLACEHOLDERS.md
 ```
 
-El objetivo de esta sesión es centralizar el estado de la lista de lugares en un `PlacesController` de GetX que `HomeScreen` lee con `Obx`, y refactorizar la navegación a `Get.to`. Cada bloque comentado trae, justo debajo del `TODO`, un comentario `// Por qué:` con la explicación.
+El objetivo de esta sesión es reemplazar la pestaña "Mapa" (que hasta ahora solo mostraba un texto de aviso) por un mapa real con la posición del usuario y marcadores de los lugares que expone el controller. Cada bloque comentado trae, justo debajo del `TODO`, un comentario `// Por qué:` con la explicación.
 
 ## Archivos nuevos ya completos (sin `TODO`)
-- `lib/controllers/places_controller.dart` — estado compartido (`RxList<Place> lugares`, `Rx<EstadoCarga> estado`, `RxString mensajeError`), salvo el cuerpo de `cargarLugares()` (ver tabla de abajo).
-- `lib/bindings/places_binding.dart` — registra `PlacesController` con `Get.put` al arrancar la app.
-- `lib/main.dart` — ya usa `GetMaterialApp` con `initialBinding: PlacesBinding()`.
-- `lib/widgets/place_card.dart` — ya navega con `Get.to(() => DetailScreen(place: place))` en vez de `Navigator.push`, y ya trae el corazón de favorito conectado con `Obx` (solo se usa en el Paso 6 opcional).
-- `lib/screens/add_place_screen.dart` — ya guarda el lugar nuevo vía `Get.find<PlacesController>().agregarLugar(...)` y cierra con `Get.back()`.
-- `lib/i18n/app_translations.dart` — diccionario español/inglés completo (solo se usa en el Paso 6B opcional).
-- `pubspec.yaml` — ya incluye `get`.
+- `lib/services/location_service.dart` — salvo el bloque de solicitud de permiso, ver tabla abajo.
+- `lib/controllers/places_controller.dart` — ya extendido con `posicion`, `estadoPosicion`, `mensajeErrorPosicion`, `cargarPosicion()` y `distanciaA()`.
+- `lib/screens/map_screen.dart` — lee el controller con `Obx`; salvo la capa de marcadores, ver tabla abajo.
+- `lib/screens/detail_screen.dart` — ya acepta `distanciaMetros` opcional (se usa desde el Paso 4).
+- Favoritos en memoria e idioma español/inglés (`lib/i18n/app_translations.dart`) — resultado del Paso 6 opcional de la Sesión 4, ya resuelto en esta rama: el corazón de `PlaceCard` marca favoritos y el botón de idioma de Inicio cambia la barra inferior y el menú "⋮".
+- `pubspec.yaml` — ya incluye `geolocator`, `permission_handler`, `flutter_map`, `latlong2`.
 
 ## Qué descomentar
 
 | Archivo | Qué descomentar | Paso de la práctica |
 |---|---|---|
-| `lib/controllers/places_controller.dart` | En `cargarLugares()`: borrar `lugares.value = []; estado.value = EstadoCarga.exito;` y descomentar el bloque `try { ... } catch (e) { ... }` completo (`fetchLugaresSimulado` → estados) | Paso 2 |
-| `lib/screens/home_screen.dart` | Borrar `body: const Center(child: Text('Pendiente de conectar con Obx'))` y descomentar el `body: Obx(() { ... })` completo | Paso 3 |
-| `lib/controllers/places_controller.dart` | **Opcional:** borrar `void alternarFavorito(Place lugar) {}` y descomentar el método completo | Paso 6A (opcional) |
-| `lib/main.dart` | **Opcional:** descomentar `translations`, `locale` y `fallbackLocale` (no hay nada que borrar); y en la barra inferior, borrar `items: const [...]` y descomentar `items: [...]` con `.tr` | Paso 6B (opcional) |
-| `lib/screens/home_screen.dart` | **Opcional:** descomentar el `IconButton` de idioma (no hay nada que borrar); y en el menú "⋮", borrar `itemBuilder: ... const [...]` y descomentar la versión con `.tr` | Paso 6B (opcional) |
+| `lib/services/location_service.dart` | El bloque `Geolocator.checkPermission()`/`requestPermission()` dentro de `obtenerPosicionActual()` | Paso 3 |
+| `lib/screens/map_screen.dart` | El `MarkerLayer` completo (tu posición + un marcador por cada lugar del controller, con navegación al Detalle mostrando la distancia) | Paso 4 |
+| `lib/screens/map_screen.dart` | *(Opcional)* El `floatingActionButton` «Centrar en mi ubicación» (usa el `mapController` ya conectado; no hay nada que borrar) | Paso 7A |
+| `lib/widgets/place_card.dart` | *(Opcional)* El `import` de `location_service.dart` y el `Obx` con la distancia bajo la categoría (no hay nada que borrar) | Paso 7B |
 
-El Paso 6 (favoritos e idioma) es opcional: no cuenta dentro de los 55 minutos ni bloquea la Sesión 5.
+Los bloques `TODO(sesion-05): OPCIONAL` no cuentan dentro de los 55 minutos: son para quien termina antes. Con la rama recién traída la app compila y corre igual sin ellos.
 
-Con la rama recién traída (antes de descomentar nada), Inicio muestra el texto "Pendiente de conectar con Obx" — es el comportamiento esperado hasta completar los Pasos 2 y 3. El orden importa: el controller (Paso 2) debe quedar resuelto antes de que la pantalla (Paso 3) tenga algo real que mostrar. Las pestañas Mapa y Favoritos siguen siendo los placeholders de la Sesión 2.
+## Edición manual fuera de este repo (no versionada aquí)
+
+`android/` e `ios/` nunca viven en este repo (ver `README.md`) — los generó `flutter create` una sola vez en la Sesión 1 y no se vuelven a tocar con `git checkout`. Los permisos nativos de esta sesión se agregan **directamente en tu propio proyecto** `exploraec`, a mano:
+
+**Android** — agregar dentro de `android/app/src/main/AndroidManifest.xml`, como hijo directo de `<manifest>` (antes de `<application>`):
+```xml
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+```
+
+**iOS** — agregar dentro de `ios/Runner/Info.plist`, como un par `<key>`/`<string>` más dentro del `<dict>` principal:
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>ExploraEC necesita tu ubicación para mostrarte lugares cercanos.</string>
+```
+
+Ninguno de los dos cambios se ve reflejado con hot reload/hot restart — requieren detener `flutter run` por completo y volver a ejecutarlo, porque cambian configuración nativa que la app lee solo al iniciar el proceso.
 
 ## Comando de arranque
 
@@ -38,3 +52,5 @@ Con la rama recién traída (antes de descomentar nada), Inicio muestra el texto
 flutter pub get
 flutter run
 ```
+
+Con la rama recién traída (antes de descomentar nada), la pestaña Mapa pide el permiso pero nunca lo solicita de verdad (`permiso` queda fijo en `denied`), así que siempre muestra el error de permiso denegado — es el comportamiento esperado hasta completar el Paso 3. Inicio sigue funcionando con los lugares de ejemplo.
