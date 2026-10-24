@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../controllers/gastos_controller.dart';
 import '../controllers/places_controller.dart';
 
 /// Registra las dependencias que la app necesita desde el arranque —
@@ -12,5 +13,7 @@ class PlacesBinding extends Bindings {
   @override
   void dependencies() {
     Get.put(PlacesController());
+    // Sesión 6: el controller de Gastos se crea la primera vez que se usa.
+    Get.lazyPut(() => GastosController());
   }
 }
