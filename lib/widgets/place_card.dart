@@ -14,8 +14,8 @@ import '../services/location_service.dart';
 /// `MaterialPageRoute` — Flutter sigue usando `Navigator` por debajo,
 /// `Get.to` solo evita repetir `MaterialPageRoute(builder: ...)` en cada
 /// lugar que navega, y no pide `context` para hacerlo. El corazón de
-/// favorito (Paso 6 opcional de la Sesión 4) lee `PlacesController` con
-/// `Get.find` y se repinta solo con `Obx`.
+/// favorito (Sesión 4 en memoria, Sesión 7 con Hive) lee `PlacesController`
+/// con `Get.find` y se repinta solo con `Obx`.
 class PlaceCard extends StatelessWidget {
   final Place place;
   const PlaceCard({super.key, required this.place});

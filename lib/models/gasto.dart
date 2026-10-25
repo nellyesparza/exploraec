@@ -1,4 +1,6 @@
-/// Un gasto del viaje, tal como lo devuelve el backend — Sesión 6.
+/// Un gasto del viaje, tal como lo devuelve el backend — Sesión 6. Desde la
+/// Sesión 7 también se puede guardar en la caché de Hive con `toMap()` y
+/// reconstruir con `Gasto.fromMap()`.
 class Gasto {
   final int id;
   final String descripcion;
@@ -25,4 +27,19 @@ class Gasto {
       fecha: (json['fecha'] as String?) ?? '',
     );
   }
+
+  /// Serialización manual para la caché local — Sesión 7. Los 5 campos son
+  /// primitivos, así que no hace falta un `TypeAdapter` generado. Mismos
+  /// nombres que el JSON del backend.
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'descripcion': descripcion,
+        'monto': monto,
+        'categoria': categoria,
+        'fecha': fecha,
+      };
+
+  /// Hive devuelve los mapas como `Map<dynamic, dynamic>`: por eso se copian
+  /// a `Map<String, dynamic>` antes de leerlos.
+  factory Gasto.fromMap(Map mapa) => Gasto.fromJson(Map<String, dynamic>.from(mapa));
 }

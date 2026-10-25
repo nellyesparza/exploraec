@@ -42,10 +42,21 @@ class GastosApiService {
     final json = jsonDecode(utf8.decode(respuesta.bodyBytes));
     final token = json is Map ? json['access_token'] : null;
     if (token is! String) {
-      throw ApiException(
-          'Respuesta inesperada del servidor al iniciar sesión.');
+      throw ApiException('Respuesta inesperada del servidor al iniciar sesión.');
     }
     _token = token;
+  }
+
+  /// GET /usuarios/me — `{id, email}`. La Sesión 7 usa el `id` para dar a la
+  /// caja de Hive de cada usuario su propio nombre (`gastos_<id>`).
+  Future<int> obtenerIdUsuario() async {
+    final respuesta = await _get('/usuarios/me');
+    final json = jsonDecode(utf8.decode(respuesta.bodyBytes));
+    final id = json is Map ? json['id'] : null;
+    if (id is! int) {
+      throw ApiException('Respuesta inesperada del servidor al leer tu perfil.');
+    }
+    return id;
   }
 
   /// GET /gastos/?skip=&limit= (con barra final: sin ella el servidor responde 307; `http` sigue la redirección en GET, pero no en POST) — el total viene en la cabecera X-Total-Count.
@@ -53,16 +64,16 @@ class GastosApiService {
     int skip = 0,
     int limit = 20,
   }) async {
-    final respuesta =
-        await _get('/gastos/', {'skip': '$skip', 'limit': '$limit'});
+    final respuesta = await _get('/gastos/', {'skip': '$skip', 'limit': '$limit'});
     final json = jsonDecode(utf8.decode(respuesta.bodyBytes));
     if (json is! List) {
       throw ApiException('Respuesta inesperada del servidor al listar gastos.');
     }
-    final gastos =
-        json.whereType<Map<String, dynamic>>().map(Gasto.fromJson).toList();
-    final total =
-        int.tryParse(respuesta.headers['x-total-count'] ?? '') ?? gastos.length;
+    final gastos = json
+        .whereType<Map<String, dynamic>>()
+        .map(Gasto.fromJson)
+        .toList();
+    final total = int.tryParse(respuesta.headers['x-total-count'] ?? '') ?? gastos.length;
     return (gastos: gastos, total: total);
   }
 
@@ -72,17 +83,14 @@ class GastosApiService {
     if (token == null) {
       throw ApiException('Inicia sesión para ver tus gastos.', statusCode: 401);
     }
-    final uri =
-        Uri.parse('${ApiConfig.baseUrl}$ruta').replace(queryParameters: query);
-    return _enviar(
-        () => http.get(uri, headers: {'Authorization': 'Bearer $token'}));
+    final uri = Uri.parse('${ApiConfig.baseUrl}$ruta').replace(queryParameters: query);
+    return _enviar(() => http.get(uri, headers: {'Authorization': 'Bearer $token'}));
   }
 
   /// Único lugar con try/catch y timeout: toda petición pasa por aquí.
-  Future<http.Response> _enviar(
-      Future<http.Response> Function() peticion) async {
+  Future<http.Response> _enviar(Future<http.Response> Function() peticion) async {
     try {
-      final respuesta = await peticion().timeout(const Duration(seconds: 1));
+      final respuesta = await peticion().timeout(const Duration(seconds: 15));
       if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
         return respuesta;
       }

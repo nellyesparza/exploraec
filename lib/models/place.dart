@@ -1,8 +1,5 @@
-/// Modelo de datos de ExploraEC — Sesión 2.
-///
-/// Por ahora vive únicamente en memoria: [lugaresEjemplo] es una lista
-/// escrita a mano. La Sesión 6 la reemplaza por datos reales obtenidos
-/// de la Overpass API (OpenStreetMap).
+/// Modelo de datos de ExploraEC — Sesión 2. Desde la Sesión 7 se puede
+/// guardar en Hive (favoritos) con `toMap()`/`Place.fromMap()`.
 class Place {
   final String id;
   final String nombre;
@@ -19,6 +16,27 @@ class Place {
     required this.lat,
     required this.lng,
   });
+
+  /// Serialización manual para guardar un favorito en Hive — Sesión 7. Todos
+  /// los campos son tipos primitivos (`String`/`double`), así que un
+  /// `Map<String, dynamic>` alcanza sin necesitar un `TypeAdapter` generado.
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'nombre': nombre,
+        'categoria': categoria,
+        'descripcion': descripcion,
+        'lat': lat,
+        'lng': lng,
+      };
+
+  factory Place.fromMap(Map<String, dynamic> mapa) => Place(
+        id: mapa['id'] as String,
+        nombre: mapa['nombre'] as String,
+        categoria: mapa['categoria'] as String,
+        descripcion: mapa['descripcion'] as String,
+        lat: (mapa['lat'] as num).toDouble(),
+        lng: (mapa['lng'] as num).toDouble(),
+      );
 }
 
 final List<Place> lugaresEjemplo = [

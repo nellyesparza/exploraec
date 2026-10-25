@@ -1,13 +1,14 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 
 import '../models/place.dart';
 import '../services/location_service.dart';
 
 enum EstadoCarga { cargando, exito, error }
 
-/// Fuente única de verdad de los lugares y de la posición del usuario —
-/// Sesiones 4 y 5. La lista (`lugares`) y su estado de carga nacieron en la
+/// Fuente única de verdad de los lugares, la posición y los favoritos —
+/// Sesiones 4, 5 y 7. La lista (`lugares`) y su estado de carga nacieron en la
 /// Sesión 4 para `HomeScreen`; desde la Sesión 5 el controller también
 /// guarda la posición real (`posicion`, con su propio estado) para que el
 /// Mapa —y, en la Sesión 6, la consulta a la Overpass API— la lean sin
@@ -39,6 +40,10 @@ class PlacesController extends GetxController {
   void onInit() {
     _observarErrores();
     super.onInit();
+    // Sesión 7: los favoritos guardados en Hive se cargan al arrancar.
+    favoritos.value = _favoritosBox.values
+        .map((mapa) => Place.fromMap(Map<String, dynamic>.from(mapa)))
+        .toList();
     cargarLugares();
   }
 
@@ -88,31 +93,51 @@ class PlacesController extends GetxController {
   }
 
   /// Agrega un lugar creado a mano (`AddPlaceScreen`) — en memoria
-  /// únicamente hasta que la Sesión 7 lo persista con Hive. `lugares.add`
-  /// (en vez de reconstruir toda la lista) ya notifica a cualquier `Obx`
-  /// que esté escuchando, en Inicio y en el Mapa a la vez.
+  /// únicamente: no se guarda en Hive a propósito (solo se guardan los
+  /// favoritos). `lugares.add` (en vez de reconstruir toda la lista) ya
+  /// notifica a cualquier `Obx` que esté escuchando, en Inicio y en el Mapa
+  /// a la vez.
   void agregarLugar(Place lugar) {
     lugaresEjemplo.add(lugar);
     lugares.add(lugar);
   }
 
-  /// Favoritos en memoria — Paso 6 (opcional). Viven solo mientras la app
-  /// está abierta; la Sesión 7 los persiste con Hive, sin cambiar los
-  /// nombres de abajo (`favoritos`, `esFavorito`, `alternarFavorito`).
+  /// Favoritos — Sesión 4 (en memoria) y Sesión 7 (persistentes). `_favoritosBox`
+  /// es el almacenamiento (sobrevive reiniciar la app; `main()` ya la abrió);
+  /// `favoritos` es el espejo reactivo que la UI observa con `Obx` — el
+  /// patrón «Hive guarda, Rx notifica».
   final RxList<Place> favoritos = <Place>[].obs;
+  final Box<Map> _favoritosBox = Hive.box<Map>('favoritos');
 
   bool esFavorito(Place lugar) => favoritos.any((p) => p.id == lugar.id);
 
   /// Otro estado derivado: se calcula a partir de `favoritos`, no se guarda.
   int get totalFavoritos => favoritos.length;
 
+  // TODO(sesion-07): borra el método `alternarFavorito` de abajo (la versión en memoria de la Sesión 4) y descomenta el bloque completo. (Paso 3 — favoritos persistentes)
+  // Por qué: la versión de abajo solo agrega o quita de la lista reactiva
+  // `favoritos`: el corazón responde, pero todo se pierde al cerrar la app.
+  // La versión real además agrega o elimina el lugar de _favoritosBox (Hive,
+  // lo que sobrevive reiniciar la app).
+
   void alternarFavorito(Place lugar) {
     if (esFavorito(lugar)) {
+      _favoritosBox.delete(lugar.id);
       favoritos.removeWhere((p) => p.id == lugar.id);
     } else {
+      _favoritosBox.put(lugar.id, lugar.toMap());
       favoritos.add(lugar);
     }
   }
+  // void alternarFavorito(Place lugar) {
+  //   if (esFavorito(lugar)) {
+  //     _favoritosBox.delete(lugar.id);
+  //     favoritos.removeWhere((p) => p.id == lugar.id);
+  //   } else {
+  //     _favoritosBox.put(lugar.id, lugar.toMap());
+  //     favoritos.add(lugar);
+  //   }
+  // }
 
   double? distanciaA(Place lugar) {
     final pos = posicion.value;

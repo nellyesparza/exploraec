@@ -70,9 +70,26 @@ class GastosScreen extends GetView<GastosController> {
         // `LoadingView` de siempre; eso es lo esperado.
 
         return RefreshIndicator(
-          onRefresh: controller.cargarGastos,
-          child: _buildLista(controller.gastos),
-        );
+            onRefresh: controller.cargarGastos,
+            child: Column(
+              children: [
+                if (controller.desdeCache.value)
+                  MaterialBanner(
+                    content: Text(
+                      'Sin conexión — mostrando tus gastos guardados '
+                      '(última sincronización: ${controller.ultimaSincronizacion})',
+                    ),
+                    leading: const Icon(Icons.cloud_off),
+                    actions: [
+                      TextButton(
+                        onPressed: controller.cargarGastos,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                Expanded(child: _buildLista(controller.gastos)),
+              ],
+            ));
       }),
     );
   }
