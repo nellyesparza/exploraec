@@ -1,47 +1,58 @@
-# Placeholders de esta rama (sesion-07)
+# Placeholders de esta rama (sesion-08)
 
-Punto de partida: ExploraEC con la sección **Gastos** de la Sesión 6 funcionando (registro → login → lista contra el backend de gastos, con el token solo en memoria) y favoritos que viven solo mientras la app está abierta. Tráela con:
+Punto de partida: ExploraEC con «Gastos del viaje» de las Sesiones 6-7 (lista contra el backend, caché de Hive, favoritos persistentes). Tráela con:
 
 ```bash
 git fetch starter
-git checkout starter/sesion-07 -- lib pubspec.yaml PLACEHOLDERS.md
+git checkout starter/sesion-08 -- lib test pubspec.yaml PLACEHOLDERS.md
 flutter pub get
 ```
 
-El objetivo de esta sesión es guardar datos en el dispositivo con Hive: una caché de los gastos (`GastosRepository`, una caja por usuario) y favoritos de lugares que sobreviven reiniciar la app. Cada bloque comentado trae, justo debajo del `TODO`, un comentario `// Por qué:` con la explicación.
+El objetivo de esta sesión es reemplazar el cliente `http` por `dio` con interceptores, guardar el token en el almacenamiento seguro, manejar la sesión con `AuthController` y completar el CRUD de gastos.
+
+**Todos los bloques son solo de descomentar**: no hay nada que borrar ni que copiar. Cada bloque tiene, justo arriba de su línea `TODO(sesion-08) Paso N`, un comentario `// Por qué:`. Para activarlo, selecciona las líneas comentadas que están debajo del `TODO` (no el `TODO` ni el «Por qué») y presiona `Ctrl + /` (`Cmd + /` en Mac).
 
 ## Archivos ya completos (sin `TODO`)
-- `lib/repositories/gastos_repository.dart` — nuevo y completo: servidor primero, caché de Hive como respaldo, caja `gastos_<id>` por usuario. Hasta completar el Paso 2 el controller no lo usa para cargar, así que el análisis puede marcar `_repository` como «no usado»: es esperado.
-- `lib/main.dart` — ya inicializa Hive (`Hive.initFlutter()` y la caja `favoritos`) antes de `runApp` y usa `FavoritesScreen`. **No** abre ninguna caja de gastos.
-- `lib/models/gasto.dart` y `lib/models/place.dart` — ya tienen `toMap()`/`fromMap()` (serialización manual).
-- `lib/services/gastos_api_service.dart` — suma `obtenerIdUsuario()` (`GET /usuarios/me`), que da nombre a la caja de cada usuario.
-- `lib/controllers/gastos_controller.dart` — ya declara `_repository`, `desdeCache` y `ultimaSincronizacion`, y `entrar(...)` ya abre la caja del usuario tras el login. El flujo de la Sesión 6 (registro → login → listar) viene resuelto.
-- `lib/screens/favorites_screen.dart` — completo, reemplaza a `favorites_placeholder_screen.dart` (se eliminó de esta rama).
-- `lib/widgets/place_card.dart` — ya muestra el corazón de favorito (`Obx`); no persiste nada hasta completar el Paso 3.
-- `lib/services/settings_service.dart` — completo; solo se usa en el Paso 6 opcional (idioma guardado).
-- `pubspec.yaml` — ya incluye `hive`, `hive_flutter` y `path_provider`.
-- Los bloques opcionales de la Sesión 6 (`TODO(sesion-06): OPCIONAL`, deslizar para actualizar) **no** vienen resueltos en esta rama.
+- `lib/services/api_exception.dart` — traduce un error de `dio` a un mensaje legible (`detail` como texto o como lista, sin conexión, tiempo agotado).
+- `lib/services/api_client.dart` — `dio` con la dirección del backend (`--dart-define=API_BASE_URL=...`) y tiempo máximo de 15 s. Los dos interceptores están comentados (Pasos 2 y 7).
+- `lib/services/secure_token_storage.dart` — leer, guardar y borrar el token con `flutter_secure_storage`.
+- `lib/services/gastos_api_service.dart` — las llamadas HTTP de gastos y categorías sobre `ApiClient`.
+- `lib/models/usuario.dart`, `lib/utils/validadores.dart`, `lib/widgets/sin_sesion_view.dart`, `lib/screens/login_screen.dart`, `lib/screens/gasto_form_screen.dart`, `lib/screens/cambiar_password_screen.dart`.
+- `lib/repositories/gastos_repository.dart` — el de la Sesión 7, con un arreglo: no lee la caja si un 401 la cerró en medio de la lectura.
+- `lib/main.dart` — crea `ApiClient` y `AuthController` antes de `runApp`.
+- `pubspec.yaml` — suma `dio` y `flutter_secure_storage`; quita `http`.
 
 ## Qué descomentar
 
-| Archivo | Qué descomentar | Paso de la práctica |
+| Archivo | Bloque | Paso |
 |---|---|---|
-| `lib/controllers/gastos_controller.dart` | En `cargarGastos()`: borrar el bloque que llama a `_api.listarGastos(...)` directamente y descomentar el que llama a `_repository.obtenerGastos()` | Paso 2 |
-| `lib/screens/gastos_screen.dart` | *(Se escribe a mano, el código está en el instructivo)* el banner «Sin conexión — mostrando tus gastos guardados» con `MaterialBanner` | Paso 2 |
-| `lib/controllers/places_controller.dart` | Borrar la versión en memoria de `alternarFavorito` y descomentar el cuerpo real (agrega/quita de `_favoritosBox` y de la lista reactiva `favoritos`) | Paso 3 |
-| `lib/controllers/gastos_controller.dart` | En `salir()` (cerrar sesión): borrar el método provisional y descomentar el que además llama a `_repository.vaciar()` | Paso 5 |
-| `lib/main.dart` | *(Opcional)* Descomentar el `import` y `await SettingsService.abrir();` (no hay nada que borrar); y en `GetMaterialApp`, borrar `locale: const Locale('es', 'EC'),` y descomentar `locale: SettingsService.idioma,` | Paso 6 (opcional) |
-| `lib/screens/home_screen.dart` | *(Opcional)* Descomentar el `import`; y en el botón de idioma, borrar el bloque `onPressed: () { ... },` y descomentar `onPressed: SettingsService.alternarIdioma,` | Paso 6 (opcional) |
-
-Con la rama recién traída (antes de descomentar nada) la app funciona igual que al final de la Sesión 6: sin banner y sin caché; los favoritos responden pero se pierden al cerrar la app.
+| `lib/services/api_client.dart` | Interceptor del token (cabecera `Authorization`) | 2 |
+| `lib/controllers/auth_controller.dart` | `iniciarSesion` | 2 |
+| `lib/screens/gastos_screen.dart` | Pantalla «sin sesión» (`SinSesionView`) | 2 |
+| `lib/controllers/auth_controller.dart` | `registrar` | 3 |
+| `lib/screens/register_screen.dart` | Validadores de correo y contraseña (2 líneas) | 3 |
+| `lib/controllers/auth_controller.dart` | `restaurarSesion` | 4 |
+| `lib/controllers/gastos_controller.dart` | `cargarCategorias` y `crear` | 5 |
+| `lib/screens/gastos_screen.dart` | Botón «+» | 5 |
+| `lib/controllers/gastos_controller.dart` | `actualizar` y `eliminar` | 6 |
+| `lib/screens/gastos_screen.dart` | Tocar para editar y botón de eliminar | 6 |
+| `lib/services/api_client.dart` | Interceptor del 401 | 7 |
+| `lib/controllers/auth_controller.dart` | Limpiar los gastos en `cerrarSesion` | 8 |
+| `lib/controllers/auth_controller.dart`, `lib/screens/gastos_screen.dart` | `cambiarPassword` y opción del menú (3 bloques) | 9 (opcional) |
 
 ## Pruebas
 
-`test/gastos_controller_test.dart` prueba el controller con un servidor falso (`MockClient`) y una carpeta temporal de Hive: no necesita el backend. Con la rama recién traída **fallan 3** pruebas (las marcadas «Paso 2» y «Paso 5»: el respaldo en caché y el borrado de la caja aún no están conectados); pasan las 10 al completar esos pasos. Ejecutarlas: `flutter test`.
+`test/sesion_08_test.dart` prueba el controller con un servidor falso (no necesita el backend ni el emulador). Con la rama recién traída **fallan las 15**; al terminar cada paso pasan más:
 
-## Comando de arranque
+| Después del Paso | Pasan | Fallan |
+|---|---|---|
+| 1 (rama recién traída) | 0 | 15 |
+| 2 | 3 | 12 |
+| 3 | 5 | 10 |
+| 4 | 7 | 8 |
+| 5 | 10 | 5 |
+| 6 | 13 | 2 |
+| 7 | 14 | 1 |
+| 8 | 15 | 0 |
 
-```bash
-flutter pub get
-flutter run
-```
+Ejecutarlas: `flutter test`.

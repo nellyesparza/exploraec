@@ -114,12 +114,7 @@ class PlacesController extends GetxController {
   /// Otro estado derivado: se calcula a partir de `favoritos`, no se guarda.
   int get totalFavoritos => favoritos.length;
 
-  // TODO(sesion-07): borra el método `alternarFavorito` de abajo (la versión en memoria de la Sesión 4) y descomenta el bloque completo. (Paso 3 — favoritos persistentes)
-  // Por qué: la versión de abajo solo agrega o quita de la lista reactiva
-  // `favoritos`: el corazón responde, pero todo se pierde al cerrar la app.
-  // La versión real además agrega o elimina el lugar de _favoritosBox (Hive,
-  // lo que sobrevive reiniciar la app).
-
+  /// Favoritos persistentes (Sesión 7): primero Hive, luego el espejo reactivo.
   void alternarFavorito(Place lugar) {
     if (esFavorito(lugar)) {
       _favoritosBox.delete(lugar.id);
@@ -129,15 +124,6 @@ class PlacesController extends GetxController {
       favoritos.add(lugar);
     }
   }
-  // void alternarFavorito(Place lugar) {
-  //   if (esFavorito(lugar)) {
-  //     _favoritosBox.delete(lugar.id);
-  //     favoritos.removeWhere((p) => p.id == lugar.id);
-  //   } else {
-  //     _favoritosBox.put(lugar.id, lugar.toMap());
-  //     favoritos.add(lugar);
-  //   }
-  // }
 
   double? distanciaA(Place lugar) {
     final pos = posicion.value;

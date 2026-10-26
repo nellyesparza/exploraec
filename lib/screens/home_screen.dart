@@ -9,8 +9,7 @@ import '../widgets/error_view.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/place_card.dart';
 import 'add_place_screen.dart';
-// TODO(sesion-07): OPCIONAL — descomenta la línea de abajo (Paso 6 — idioma guardado). No borres nada.
-// import '../services/settings_service.dart';
+import '../services/settings_service.dart';
 
 /// Pantalla de Inicio: lista de lugares — Sesión 2. Desde la Sesión 4 ya
 /// no mantiene su propio `Future`/`setState`: `GetView<PlacesController>`
@@ -31,17 +30,7 @@ class HomeScreen extends GetView<PlacesController> {
           IconButton(
             icon: const Icon(Icons.translate),
             tooltip: 'idioma'.tr,
-            // TODO(sesion-07): OPCIONAL — borra el bloque `onPressed: () { ... },` de abajo y descomenta la línea siguiente. (Paso 6 — idioma guardado)
-            // Por qué: el bloque de abajo cambia el idioma pero no lo
-            // recuerda. `SettingsService.alternarIdioma` hace lo mismo y,
-            // además, guarda la elección en Hive para el próximo arranque.
-            onPressed: () {
-              final esEspanol = Get.locale?.languageCode == 'es';
-              Get.updateLocale(esEspanol
-                  ? const Locale('en', 'US')
-                  : const Locale('es', 'EC'));
-            },
-            // onPressed: SettingsService.alternarIdioma,
+            onPressed: SettingsService.alternarIdioma,
           ),
           PopupMenuButton<String>(
             tooltip: 'Simular estado (solo práctica)',
