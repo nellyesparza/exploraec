@@ -47,14 +47,15 @@ class AuthController extends GetxController {
     // TODO(sesion-08) Paso 3: descomenta las 10 líneas de abajo (registrar).
     // cargando.value = true;
     // mensajeError.value = '';
-    // try {
-    //   await _api.post('/usuarios/', data: {'email': email, 'password': password});
-    //   await iniciarSesion(email, password);
-    // } on ApiException catch (e) {
-    //   mensajeError.value = e.mensaje;
-    // } finally {
-    //   cargando.value = false;
-    // }
+    try {
+      await _api
+          .post('/usuarios/', data: {'email': email, 'password': password});
+      await iniciarSesion(email, password);
+    } on ApiException catch (e) {
+      mensajeError.value = e.mensaje;
+    } finally {
+      cargando.value = false;
+    }
   }
 
   /// POST /usuarios/token — OJO: `application/x-www-form-urlencoded`, no JSON.
@@ -64,24 +65,24 @@ class AuthController extends GetxController {
     // formulario, no JSON; mandar JSON devuelve 422. El token recibido se
     // guarda en memoria (para el interceptor) y en el almacenamiento seguro.
     // TODO(sesion-08) Paso 2: descomenta las 18 líneas de abajo (iniciar sesión).
-    // cargando.value = true;
-    // mensajeError.value = '';
-    // try {
-    //   final r = await _api.post(
-    //     '/usuarios/token',
-    //     data: {'username': email, 'password': password},
-    //     options: Options(contentType: Headers.formUrlEncodedContentType),
-    //   );
-    //   final token = (r.data as Map)['access_token'] as String;
-    //   _api.token = token;
-    //   await _almacen.guardar(token);
-    //   await cargarUsuario();
-    //   avisoSesion.value = '';
-    // } on ApiException catch (e) {
-    //   mensajeError.value = e.mensaje;
-    // } finally {
-    //   cargando.value = false;
-    // }
+    cargando.value = true;
+    mensajeError.value = '';
+    try {
+      final r = await _api.post(
+        '/usuarios/token',
+        data: {'username': email, 'password': password},
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+      );
+      final token = (r.data as Map)['access_token'] as String;
+      _api.token = token;
+      await _almacen.guardar(token);
+      await cargarUsuario();
+      avisoSesion.value = '';
+    } on ApiException catch (e) {
+      mensajeError.value = e.mensaje;
+    } finally {
+      cargando.value = false;
+    }
   }
 
   /// Al abrir la app: si hay un token guardado, comprueba con el servidor que
