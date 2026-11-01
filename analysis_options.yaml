@@ -18,6 +18,8 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    # Ejercicios de la Sesión 1 (usan print a propósito): no forman parte de la app.
+    - lib/playground/**
 
 linter:
   # The lint rules applied to this project can be customized in the

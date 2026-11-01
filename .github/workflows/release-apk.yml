@@ -1,0 +1,72 @@
+# Entrega continua (CD): compila, prueba y publica el APK de la app — Sesión 10.
+#
+# Relación con el otro workflow:
+#   - ci.yml      → CI, corre en CADA cambio (push o pull request): analiza y prueba.
+#   - este archivo → CD, corre en CADA VERSIÓN (etiqueta «v…»): vuelve a verificar,
+#                    compila el APK de release y lo publica en un Release de GitHub.
+#
+# Se ejecuta de dos formas:
+#   1. Al subir una etiqueta que empiece con «v» (por ejemplo, v1.0.0): además de
+#      compilar, crea un Release en GitHub y le adjunta el APK.
+#   2. A mano, desde la pestaña Actions → «Release APK» → «Run workflow»: solo
+#      compila y deja el APK como artefacto (sin Release).
+#
+# La dirección del backend se puede cambiar sin tocar este archivo: en GitHub,
+# Settings → Secrets and variables → Actions → Variables → API_BASE_URL.
+# Si no existe, se usa la del emulador Android (http://10.0.2.2:8000).
+# (Una variable se puede ver; si fuera una llave de firma, iría en «Secrets».)
+
+name: Release APK
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write # necesario para crear el Release y adjuntar el APK
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Descargar las dependencias
+        run: flutter pub get
+
+      - name: Analizar el código
+        run: flutter analyze --no-fatal-infos
+
+      - name: Ejecutar las pruebas
+        run: flutter test
+
+      - name: Compilar el APK de release
+        run: flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL || 'http://10.0.2.2:8000' }}
+
+      - name: Guardar el APK como artefacto de la ejecución
+        uses: actions/upload-artifact@v7
+        with:
+          name: exploraec-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publicar el Release con el APK (solo con etiqueta)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
+          generate_release_notes: true

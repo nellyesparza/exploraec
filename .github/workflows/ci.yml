@@ -1,0 +1,59 @@
+# CI — integración continua (Sesión 10).
+#
+# Qué hace: cada vez que subes código a GitHub (push a cualquier rama) o abres un
+# pull request, una máquina limpia analiza el código y ejecuta las pruebas. Si algo
+# falla, GitHub marca la subida con una ✗ roja y se ve ANTES de integrar el cambio.
+#
+# Es la «puerta de calidad» del proyecto. Sirve igual para el código que escribes
+# tú que para el que escribe un agente de IA: lo que no pasa la puerta, no entra.
+#
+# Si una subida no dispara la ejecución (a veces pasa en un repositorio recién creado),
+# puedes lanzarla a mano desde la pestaña Actions.
+#
+# Este workflow NO publica nada. La publicación del APK (entrega continua) está en
+# release-apk.yml y se dispara con una etiqueta de versión.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch: # también se puede ejecutar a mano: pestaña Actions → «CI» → «Run workflow»
+
+permissions:
+  contents: read # este workflow solo lee el código
+
+# Si subes dos veces seguidas a la misma rama, se cancela la ejecución anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Descargar las dependencias
+        run: flutter pub get
+
+      - name: Analizar el código
+        run: flutter analyze --no-fatal-infos
+
+      - name: Ejecutar las pruebas
+        run: flutter test
