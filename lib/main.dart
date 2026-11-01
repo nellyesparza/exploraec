@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -14,12 +15,15 @@ import 'services/ai_assistant_service.dart';
 import 'services/api_client.dart';
 import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
+import 'utils/reporte_errores.dart';
 
 Future<void> main() async {
   // Hive necesita el motor de Flutter listo antes de pedirle al sistema
   // operativo la carpeta donde guardar sus archivos — por eso `main` ahora
   // es `async` y arranca con `ensureInitialized()` antes que nada más.
   WidgetsFlutterBinding.ensureInitialized();
+  // Sesión 10: qué hacer con los errores que nadie esperaba (ver `ReporteErrores`).
+  ReporteErrores.instalar();
   await Hive.initFlutter();
   // Solo la caja de favoritos: la de gastos depende de QUIÉN inicie sesión,
   // así que se abre después, en `GastosRepository.abrirParaUsuario()`.
@@ -53,6 +57,14 @@ class ExploraEcApp extends StatelessWidget {
       translations: AppTranslations(),
       locale: SettingsService.idioma,
       fallbackLocale: const Locale('es', 'EC'),
+      // Textos propios de Flutter (licencias, selector de fecha, etc.) en el
+      // mismo idioma que la app.
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('es', 'EC'), Locale('en', 'US')],
       initialBinding: PlacesBinding(),
       home: const RootShell(),
     );

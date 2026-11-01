@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/auth_controller.dart';
-// Solo los usa el bloque comentado del Paso 4.
-// ignore: unused_import
 import '../controllers/gastos_controller.dart';
-// ignore: unused_import
 import '../services/ai_assistant_service.dart';
 import '../services/api_exception.dart';
 import '../theme/app_theme.dart';
@@ -48,15 +45,12 @@ class _AssistantScreenState extends State<AssistantScreen> {
       // Por qué: el asistente solo necesita totales, no cada gasto. Se pide el
       // resumen por categoría al backend (con el token de tu sesión) y se envía
       // al proxy junto con la pregunta. La respuesta se muestra en pantalla.
-      // TODO(sesion-09) Paso 4: descomenta las 3 líneas de abajo (conectar con el proxy).
       final resumen = await Get.find<GastosController>().obtenerResumen();
-      final r =
-          await Get.find<AiAssistantService>().preguntar(consulta, resumen);
+      final r = await Get.find<AiAssistantService>().preguntar(consulta, resumen);
       setState(() => _respuesta = r.respuesta);
 
       // Por qué: si la IA propone registrar un gasto, la app NO lo hace sola.
       // Muestra un diálogo y solo si la persona acepta se llama al backend.
-      // TODO(sesion-09) Paso 5: descomenta la línea de abajo (pedir confirmación).
       if (r.accion != null) await confirmarAccion(r.accion!);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
@@ -77,19 +71,14 @@ class _AssistantScreenState extends State<AssistantScreen> {
         content: Text(
             'La IA propone registrar: ${accion.descripcion} — ${accion.monto.toStringAsFixed(2)} en ${accion.categoria}. ¿Confirmas?'),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dialogo, false),
-              child: const Text('Cancelar')),
-          FilledButton(
-              onPressed: () => Navigator.pop(dialogo, true),
-              child: const Text('Registrar')),
+          TextButton(onPressed: () => Navigator.pop(dialogo, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(dialogo, true), child: const Text('Registrar')),
         ],
       ),
     );
     if (confirmado != true) return;
     try {
-      await Get.find<GastosController>()
-          .crear(accion.descripcion, accion.monto, accion.categoria);
+      await Get.find<GastosController>().crear(accion.descripcion, accion.monto, accion.categoria);
       if (mounted) {
         setState(() => _respuesta =
             'Listo: registré «${accion.descripcion}» por ${accion.monto.toStringAsFixed(2)} en ${accion.categoria}.');
@@ -124,9 +113,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
               children: [
                 Icon(Icons.info_outline),
                 SizedBox(width: AppSpacing.sm),
-                Expanded(
-                    child:
-                        Text('Sugerencia de IA: verifica antes de decidir.')),
+                Expanded(child: Text('Sugerencia de IA: verifica antes de decidir.')),
               ],
             ),
           ),
@@ -142,31 +129,27 @@ class _AssistantScreenState extends State<AssistantScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          // TODO(sesion-09) OPCIONAL Paso 9: descomenta las 17 líneas de abajo (preguntas sugeridas).
-          // Wrap(
-          //   spacing: AppSpacing.sm,
-          //   runSpacing: AppSpacing.sm,
-          //   children: [
-          //     for (final sugerencia in const ['¿En qué categoría gasto más?', '¿Cuánto me queda en comida?', '¿Qué lugar barato de comida me recomiendas?'])
-          //       ActionChip(
-          //         label: Text(sugerencia),
-          //         onPressed: _cargando
-          //             ? null
-          //             : () {
-          //                 _campo.text = sugerencia;
-          //                 _preguntar();
-          //               },
-          //       ),
-          //   ],
-          // ),
-          // const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final sugerencia in const ['¿En qué categoría gasto más?', '¿Cuánto me queda en comida?', '¿Qué lugar barato de comida me recomiendas?'])
+                ActionChip(
+                  label: Text(sugerencia),
+                  onPressed: _cargando
+                      ? null
+                      : () {
+                          _campo.text = sugerencia;
+                          _preguntar();
+                        },
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
           FilledButton.icon(
             onPressed: _cargando ? null : _preguntar,
             icon: _cargando
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.auto_awesome),
             label: const Text('Preguntar'),
           ),

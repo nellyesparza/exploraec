@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze *)",
+      "Bash(flutter test *)",
+      "Bash(dart format *)",
+      "Bash(git status *)",
+      "Bash(git diff *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(git push *)",
+      "Bash(git tag *)"
+    ]
+  }
+}
