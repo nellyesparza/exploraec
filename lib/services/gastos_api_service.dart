@@ -1,4 +1,5 @@
 import '../models/gasto.dart';
+import '../models/resumen_gastos.dart';
 import 'api_client.dart';
 
 /// Llamadas HTTP de la sección Gastos — Sesión 6, ahora sobre `ApiClient`
@@ -63,5 +64,17 @@ class GastosApiService {
   /// DELETE /gastos/{id} — responde 204, sin cuerpo.
   Future<void> eliminar(int id) async {
     await _client.delete('/gastos/$id');
+  }
+
+  /// GET /gastos/resumen — totales por categoría y lo que queda disponible
+  /// hasta el límite de 500. Es el único dato de gastos que sale hacia el
+  /// proxy del asistente (Sesión 9).
+  Future<ResumenGastos> obtenerResumen() async {
+    final r = await _client.get('/gastos/resumen');
+    final json = r.data;
+    if (json is! Map) {
+      throw ApiException('Respuesta inesperada del servidor al leer el resumen.');
+    }
+    return ResumenGastos.fromJson(Map<String, dynamic>.from(json));
   }
 }

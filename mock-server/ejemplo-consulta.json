@@ -1,0 +1,12 @@
+{
+  "consulta": "¿En qué categoría gasto más?",
+  "resumen": {
+    "categorias": [
+      { "categoria": "comida", "total": 20.0, "cantidad": 2, "disponible": 480.0 },
+      { "categoria": "transporte", "total": 3.25, "cantidad": 1, "disponible": 496.75 },
+      { "categoria": "entretenimiento", "total": 0.0, "cantidad": 0, "disponible": 500.0 },
+      { "categoria": "otros", "total": 0.0, "cantidad": 0, "disponible": 500.0 }
+    ],
+    "total_general": 23.25
+  }
+}

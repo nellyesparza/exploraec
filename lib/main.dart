@@ -1,23 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'bindings/places_binding.dart';
 import 'controllers/auth_controller.dart';
 import 'i18n/app_translations.dart';
+import 'screens/assistant_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/gastos_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
+import 'services/ai_assistant_service.dart';
 import 'services/api_client.dart';
 import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
+import 'utils/reporte_errores.dart';
 
 Future<void> main() async {
   // Hive necesita el motor de Flutter listo antes de pedirle al sistema
   // operativo la carpeta donde guardar sus archivos — por eso `main` ahora
   // es `async` y arranca con `ensureInitialized()` antes que nada más.
   WidgetsFlutterBinding.ensureInitialized();
+  // Sesión 10: qué hacer con los errores que nadie esperaba (ver `ReporteErrores`).
+  ReporteErrores.instalar();
   await Hive.initFlutter();
   // Solo la caja de favoritos: la de gastos depende de QUIÉN inicie sesión,
   // así que se abre después, en `GastosRepository.abrirParaUsuario()`.
@@ -28,6 +34,8 @@ Future<void> main() async {
   // la app. Al crearse, el controller comprueba si hay un token guardado.
   Get.put(ApiClient(), permanent: true);
   Get.put(AuthController(), permanent: true);
+  // Sesión 9: el cliente del proxy del asistente (no lleva ninguna clave de IA).
+  Get.put(AiAssistantService(), permanent: true);
   runApp(const ExploraEcApp());
 }
 
@@ -49,6 +57,14 @@ class ExploraEcApp extends StatelessWidget {
       translations: AppTranslations(),
       locale: SettingsService.idioma,
       fallbackLocale: const Locale('es', 'EC'),
+      // Textos propios de Flutter (licencias, selector de fecha, etc.) en el
+      // mismo idioma que la app.
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('es', 'EC'), Locale('en', 'US')],
       initialBinding: PlacesBinding(),
       home: const RootShell(),
     );
@@ -73,7 +89,8 @@ class _RootShellState extends State<RootShell> {
         0 => const HomeScreen(),
         1 => const MapScreen(),
         2 => const FavoritesScreen(),
-        _ => const GastosScreen(),
+        3 => const GastosScreen(),
+        _ => const AssistantScreen(),
       },
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -84,6 +101,7 @@ class _RootShellState extends State<RootShell> {
           BottomNavigationBarItem(icon: const Icon(Icons.map), label: 'mapa'.tr),
           BottomNavigationBarItem(icon: const Icon(Icons.favorite), label: 'favoritos'.tr),
           BottomNavigationBarItem(icon: const Icon(Icons.receipt_long), label: 'gastos'.tr),
+          BottomNavigationBarItem(icon: const Icon(Icons.auto_awesome), label: 'asistente'.tr),
         ],
       ),
     );
