@@ -5,10 +5,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'bindings/places_binding.dart';
 import 'controllers/auth_controller.dart';
 import 'i18n/app_translations.dart';
+import 'screens/assistant_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/gastos_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
+import 'services/ai_assistant_service.dart';
 import 'services/api_client.dart';
 import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
@@ -28,6 +30,8 @@ Future<void> main() async {
   // la app. Al crearse, el controller comprueba si hay un token guardado.
   Get.put(ApiClient(), permanent: true);
   Get.put(AuthController(), permanent: true);
+  // Sesión 9: el cliente del proxy del asistente (no lleva ninguna clave de IA).
+  Get.put(AiAssistantService(), permanent: true);
   runApp(const ExploraEcApp());
 }
 
@@ -73,7 +77,8 @@ class _RootShellState extends State<RootShell> {
         0 => const HomeScreen(),
         1 => const MapScreen(),
         2 => const FavoritesScreen(),
-        _ => const GastosScreen(),
+        3 => const GastosScreen(),
+        _ => const AssistantScreen(),
       },
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -84,6 +89,7 @@ class _RootShellState extends State<RootShell> {
           BottomNavigationBarItem(icon: const Icon(Icons.map), label: 'mapa'.tr),
           BottomNavigationBarItem(icon: const Icon(Icons.favorite), label: 'favoritos'.tr),
           BottomNavigationBarItem(icon: const Icon(Icons.receipt_long), label: 'gastos'.tr),
+          BottomNavigationBarItem(icon: const Icon(Icons.auto_awesome), label: 'asistente'.tr),
         ],
       ),
     );

@@ -1,58 +1,44 @@
-# Placeholders de esta rama (sesion-08)
+# Placeholders de esta rama (sesion-09)
 
-Punto de partida: ExploraEC con «Gastos del viaje» de las Sesiones 6-7 (lista contra el backend, caché de Hive, favoritos persistentes). Tráela con:
+Punto de partida: ExploraEC con la Sesión 8 resuelta (inicio de sesión con token seguro, `ApiClient` con interceptores, CRUD de gastos, cierre de sesión limpio y cambio de contraseña). Tráela con:
 
 ```bash
 git fetch starter
-git checkout starter/sesion-08 -- lib test pubspec.yaml PLACEHOLDERS.md
+git checkout starter/sesion-09 -- lib test pubspec.yaml PLACEHOLDERS.md mock-server
 flutter pub get
 ```
 
-El objetivo de esta sesión es reemplazar el cliente `http` por `dio` con interceptores, guardar el token en el almacenamiento seguro, manejar la sesión con `AuthController` y completar el CRUD de gastos.
+El objetivo de esta sesión es el Asistente ExploraIA: una pestaña donde la persona pregunta por sus gastos, conectada a un **proxy** local (`mock-server/`), que llama a Gemini con una clave gratuita guardada solo en la variable de entorno `GEMINI_API_KEY` (o responde con reglas si no hay clave), enviando solo el resumen por categoría y pidiendo confirmación antes de registrar nada.
 
-**Todos los bloques son solo de descomentar**: no hay nada que borrar ni que copiar. Cada bloque tiene, justo arriba de su línea `TODO(sesion-08) Paso N`, un comentario `// Por qué:`. Para activarlo, selecciona las líneas comentadas que están debajo del `TODO` (no el `TODO` ni el «Por qué») y presiona `Ctrl + /` (`Cmd + /` en Mac).
+**Todos los bloques son solo de descomentar**: nada que borrar ni copiar. Selecciona las líneas comentadas que están **debajo** de `TODO(sesion-09) Paso N` (no el `TODO` ni el «Por qué») y presiona `Ctrl + /` (`Cmd + /` en Mac).
 
 ## Archivos ya completos (sin `TODO`)
-- `lib/services/api_exception.dart` — traduce un error de `dio` a un mensaje legible (`detail` como texto o como lista, sin conexión, tiempo agotado).
-- `lib/services/api_client.dart` — `dio` con la dirección del backend (`--dart-define=API_BASE_URL=...`) y tiempo máximo de 15 s. Los dos interceptores están comentados (Pasos 2 y 7).
-- `lib/services/secure_token_storage.dart` — leer, guardar y borrar el token con `flutter_secure_storage`.
-- `lib/services/gastos_api_service.dart` — las llamadas HTTP de gastos y categorías sobre `ApiClient`.
-- `lib/models/usuario.dart`, `lib/utils/validadores.dart`, `lib/widgets/sin_sesion_view.dart`, `lib/screens/login_screen.dart`, `lib/screens/gasto_form_screen.dart`, `lib/screens/cambiar_password_screen.dart`.
-- `lib/repositories/gastos_repository.dart` — el de la Sesión 7, con un arreglo: no lee la caja si un 401 la cerró en medio de la lectura.
-- `lib/main.dart` — crea `ApiClient` y `AuthController` antes de `runApp`.
-- `pubspec.yaml` — suma `dio` y `flutter_secure_storage`; quita `http`.
+- `mock-server/mock-server.js` — el proxy (Node 18 o superior, sin dependencias): `POST /asistente`. Con `GEMINI_API_KEY` en el entorno llama a Gemini (modelo `gemini-3.5-flash-lite`, cambiable con `GEMINI_MODEL`) y valida su respuesta; sin clave responde con reglas. Traduce 429/502/504 a mensajes legibles. Nunca registra la cabecera `Authorization` ni la clave; solo registra el tamaño y los nombres de los campos que recibe. Trae el bloque del Paso 8 (MCP) ya escrito pero comentado.
+- `mock-server/mcp-cliente.js` — cliente MCP mínimo, sin dependencias: abre una sesión en el servidor MCP del backend (`MCP_URL`, por defecto `http://localhost:8000/mcp/`) con el token de la persona y llama a `resumen_gastos` (solo lectura). Nunca lanza: si falla devuelve `null`. Es una **demo**, no un agente.
+- `mock-server/probar-e2e.js` — prueba de extremo a extremo (backend → inicio de sesión → MCP → proxy), con ✅/❌ por paso: `node probar-e2e.js <correo> <contraseña>`.
+- `mock-server/README.md` — cómo obtener la clave gratuita, los dos modos, el contrato, los errores y qué reconoce el modo reglas. `ejemplo-consulta.json` y `ejemplo-registro.json` sirven para probar el proxy con `curl`, sin la app.
+- `lib/services/ai_assistant_service.dart` — `kAiBackendUrl` (`--dart-define=LLM_BACKEND_URL=...`), `RespuestaIA`, `AccionPropuesta` (validada: una acción incompleta se descarta) y `AiAssistantService.preguntar(consulta, resumen)`, con errores traducidos a mensajes legibles. No lleva ninguna clave de IA.
+- `lib/models/resumen_gastos.dart` y `GastosApiService.obtenerResumen()` (`GET /gastos/resumen`) con `GastosController.obtenerResumen()`.
+- `lib/screens/assistant_screen.dart` — la pantalla completa; solo faltan los bloques de abajo. Incluye el diálogo de confirmación (`confirmarAccion`).
+- `lib/main.dart` — registra `AiAssistantService` y agrega la pestaña «Asistente». `SinSesionView` ahora acepta un título.
 
 ## Qué descomentar
 
 | Archivo | Bloque | Paso |
 |---|---|---|
-| `lib/services/api_client.dart` | Interceptor del token (cabecera `Authorization`) | 2 |
-| `lib/controllers/auth_controller.dart` | `iniciarSesion` | 2 |
-| `lib/screens/gastos_screen.dart` | Pantalla «sin sesión» (`SinSesionView`) | 2 |
-| `lib/controllers/auth_controller.dart` | `registrar` | 3 |
-| `lib/screens/register_screen.dart` | Validadores de correo y contraseña (2 líneas) | 3 |
-| `lib/controllers/auth_controller.dart` | `restaurarSesion` | 4 |
-| `lib/controllers/gastos_controller.dart` | `cargarCategorias` y `crear` | 5 |
-| `lib/screens/gastos_screen.dart` | Botón «+» | 5 |
-| `lib/controllers/gastos_controller.dart` | `actualizar` y `eliminar` | 6 |
-| `lib/screens/gastos_screen.dart` | Tocar para editar y botón de eliminar | 6 |
-| `lib/services/api_client.dart` | Interceptor del 401 | 7 |
-| `lib/controllers/auth_controller.dart` | Limpiar los gastos en `cerrarSesion` | 8 |
-| `lib/controllers/auth_controller.dart`, `lib/screens/gastos_screen.dart` | `cambiarPassword` y opción del menú (3 bloques) | 9 (opcional) |
+| `lib/screens/assistant_screen.dart` | Pedir el resumen, llamar al proxy y mostrar la respuesta (3 líneas) | 4 |
+| `lib/screens/assistant_screen.dart` | Pedir confirmación cuando la IA propone una acción (1 línea) | 5 |
+| `mock-server/mock-server.js` | Pedir el resumen al backend por MCP con el token de la persona (6 líneas, dentro del manejador de `POST /asistente`) | 8 |
+| `lib/screens/assistant_screen.dart` | Preguntas sugeridas (`Wrap` con chips) | 9 (opcional) |
 
 ## Pruebas
 
-`test/sesion_08_test.dart` prueba el controller con un servidor falso (no necesita el backend ni el emulador). Con la rama recién traída **fallan las 15**; al terminar cada paso pasan más:
+`test/sesion_09_test.dart` (7 pruebas) usa un backend y un proxy falsos: no necesita el backend, el proxy ni el emulador. Junto con las 15 de la Sesión 8 suman 22. Con la rama recién traída **pasan 19 y fallan 3**; al terminar cada paso:
 
 | Después del Paso | Pasan | Fallan |
 |---|---|---|
-| 1 (rama recién traída) | 0 | 15 |
-| 2 | 3 | 12 |
-| 3 | 5 | 10 |
-| 4 | 7 | 8 |
-| 5 | 10 | 5 |
-| 6 | 13 | 2 |
-| 7 | 14 | 1 |
-| 8 | 15 | 0 |
+| 1 (rama recién traída) | 19 | 3 |
+| 4 | 20 | 2 |
+| 5 | 22 | 0 |
 
 Ejecutarlas: `flutter test`.
